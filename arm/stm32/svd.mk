@@ -4,6 +4,8 @@ all: svd
 
 svd:
 	rm -rf */svd */svdtmp
+	$(SVD2ADA_DIR)/svd2ada $(SVD2ADA_DIR)/CMSIS-SVD/ST/STM32F20x.svd \
+	  -o stm32f20x/svdtmp -p Interfaces.STM32
 	$(SVD2ADA_DIR)/svd2ada $(SVD2ADA_DIR)/CMSIS-SVD/ST/STM32F40x.svd \
 	  -o stm32f40x/svdtmp -p Interfaces.STM32
 	$(SVD2ADA_DIR)/svd2ada $(SVD2ADA_DIR)/CMSIS-SVD/ST/STM32F429x.svd \
@@ -24,6 +26,7 @@ svd:
 	   mv i-stm32-rcc.ads ../svd; \
 	   mv i-stm32-syscfg.ads ../svd; \
 	   mv i-stm32-usart.ads ../svd; \
+	   mv i-stm32-tim.ads ../svd; \
 	   mv handler.S ../svd; \
 	   mv a-intnam.ads ../svd; \
 	   cd ../..; \

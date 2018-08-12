@@ -412,15 +412,8 @@ class Stm32CommonArchSupport(ArchSupport):
     def __init__(self):
         super(Stm32CommonArchSupport, self).__init__()
 
-        self.add_linker_script('arm/stm32/common-RAM.ld', loader='RAM')
-        self.add_linker_script('arm/stm32/common-ROM.ld', loader='ROM')
-
         self.add_sources('crt0', [
-            'src/s-bbpara__stm32f4.ads',
             'arm/stm32/s-stm32.ads',
-            'arm/stm32/start-rom.S',
-            'arm/stm32/start-ram.S',
-            'arm/stm32/start-common.S',
             'arm/stm32/setup_pll.adb',
             'arm/stm32/setup_pll.ads'])
 
@@ -448,6 +441,8 @@ class Stm32(ArmV7MTarget):
 
     @property
     def cortex(self):
+        if self.mcu.startswith('stm32f2'):
+            return 'cortex-m3'
         if self.mcu.startswith('stm32f4'):
             return 'cortex-m4'
         elif self.mcu.startswith('stm32f7'):
@@ -467,14 +462,21 @@ class Stm32(ArmV7MTarget):
     @property
     def compiler_switches(self):
         # The required compiler switches
-        return ('-mlittle-endian', '-mhard-float',
-                '-mcpu=%s' % self.cortex,
-                '-mfpu=%s' % self.fpu,
-                '-mthumb')
+        if self.board == 'stm32f2':
+            return ('-mlittle-endian', '-mfloat-abi=soft',
+                    '-mcpu=%s' % self.cortex,
+                    '-mthumb')
+        else:
+            return ('-mlittle-endian', '-mhard-float',
+                    '-mcpu=%s' % self.cortex,
+                    '-mfpu=%s' % self.fpu,
+                    '-mthumb')
 
     def __init__(self, board):
         self.board = board
-        if self.board == 'stm32f4':
+        if self.board == 'stm32f2':
+            self.mcu = 'stm32f20x'
+        elif self.board == 'stm32f4':
             self.mcu = 'stm32f40x'
         elif self.board == 'stm32f429disco':
             self.mcu = 'stm32f429x'
@@ -493,6 +495,13 @@ class Stm32(ArmV7MTarget):
 
         super(Stm32, self).__init__()
 
+        if self.board == 'stm32f2':
+            self.add_linker_script('arm/stm32/stm32f20x/common-RAM.ld', loader='RAM')
+            self.add_linker_script('arm/stm32/stm32f20x/common-ROM.ld', loader='ROM')
+        else:
+            self.add_linker_script('arm/stm32/common-RAM.ld', loader='RAM')
+            self.add_linker_script('arm/stm32/common-ROM.ld', loader='ROM')
+
         self.add_linker_script('arm/stm32/%s/memory-map.ld' % self.mcu,
                                loader=('RAM', 'ROM'))
         # startup code
@@ -506,9 +515,26 @@ class Stm32(ArmV7MTarget):
             'arm/stm32/%s/svd/i-stm32-pwr.ads' % self.mcu,
             'arm/stm32/%s/svd/i-stm32-rcc.ads' % self.mcu,
             'arm/stm32/%s/svd/i-stm32-syscfg.ads' % self.mcu,
-            'arm/stm32/%s/svd/i-stm32-usart.ads' % self.mcu])
+            'arm/stm32/%s/svd/i-stm32-usart.ads' % self.mcu,
+            'arm/stm32/%s/svd/i-stm32-tim.ads' % self.mcu])
 
-        if self.board == 'stm32f4':
+        if self.board == 'stm32f2':
+            self.add_sources('crt0', [
+                'src/s-bbpara__stm32f2.ads',
+                'arm/stm32/stm32f20x/start-rom.S',
+                'arm/stm32/stm32f20x/start-ram.S',
+                'arm/stm32/stm32f20x/start-common.S'])
+        else:
+            self.add_sources('crt0', [
+                'src/s-bbpara__stm32f4.ads',
+                'arm/stm32/start-rom.S',
+                'arm/stm32/start-ram.S',
+                'arm/stm32/start-common.S'])
+
+        if self.board == 'stm32f2':
+            self.add_sources('crt0', [
+                'arm/stm32/stm32f20x/s-stm32.adb'])
+        elif self.board == 'stm32f4':
             self.add_sources('crt0', [
                 'arm/stm32/stm32f40x/s-stm32.adb'])
         elif self.board == 'stm32f429disco':
